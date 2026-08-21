@@ -475,7 +475,7 @@
       padding: 0 2px;
     }
 
-    /* Modal */
+    /* Modal (模式 B: 僅需設定使用者自備 API Key) */
     .modal-backdrop {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -660,8 +660,8 @@
 </div>
 
 <script>
-  // 1. GAS 網址寫死（請在部署 Apps Script 後將生成的 Web App 網址貼於此處）
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwzGj8UGziYoiZnkWB6EtRZW4lJhIUwAlKLMUu9fDtJrEeuPVnG-8o4F7-HFP-FlGaB/exec";
+  // 1. GAS 網址常數（請在部署 Apps Script 後將生成的 Web App 網址貼於此處）
+  const GAS_WEB_APP_URL = "YOUR_GAS_DEPLOY_URL_HERE";
 
   // 2. 讀取使用者自備 API Key
   let currentApiKey = localStorage.getItem("user_gemini_api_key") || "";
@@ -831,11 +831,12 @@
     if (retryCount === 0) showTypingIndicator();
 
     try {
-      // 3. 組裝符合模式 B 規格之 Payload
-     const payload = {
+      // 3. 組裝多重相容 Payload (包含 message, question, apiKey, key, history)
+      const payload = {
         message: text,
         question: text,
         apiKey: currentApiKey,
+        key: currentApiKey,
         history: historyContents
       };
 
@@ -848,12 +849,14 @@
       const data = await response.json();
       removeTypingIndicator();
 
-     if (data.error) {
-      throw new Error(data.error);
-    }
+      // 4. 錯誤處理防呆
+      if (data.status === "error" || data.error) {
+        throw new Error(data.message || data.error || "後端伺服器回傳錯誤");
+      }
 
-    const botReply = data.reply || "抱歉，目前無法取得完整回覆。";
-    const sources = data.sources || null;
+      // 5. 回應解析 fallback (優先 reply，若無則取 message/text)
+      const botReply = data.reply || data.message || data.text || "抱歉，目前無法取得完整回覆。";
+      const sources = data.sources || null;
 
       historyContents.push({ role: "model", parts: [{ text: botReply }] });
       appendMessage(botReply, false, sources);
