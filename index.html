@@ -832,7 +832,8 @@
 
     try {
       // 3. 組裝符合模式 B 規格之 Payload
-      const payload = {
+     const payload = {
+        message: text,
         question: text,
         apiKey: currentApiKey,
         history: historyContents
@@ -847,12 +848,12 @@
       const data = await response.json();
       removeTypingIndicator();
 
-      if (data.error) {
-        throw new Error(data.error);
-      }
+     if (data.error) {
+      throw new Error(data.error);
+    }
 
-      const botReply = data.reply || "抱歉，目前無法取得完整回覆。";
-      const sources = data.sources || null;
+    const botReply = data.reply || "抱歉，目前無法取得完整回覆。";
+    const sources = data.sources || null;
 
       historyContents.push({ role: "model", parts: [{ text: botReply }] });
       appendMessage(botReply, false, sources);
